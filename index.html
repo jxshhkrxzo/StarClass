@@ -51,17 +51,22 @@ tailwind.config = {
 <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <style>
   * { -webkit-tap-highlight-color: transparent; }
-  body { font-family: 'Nunito', sans-serif; background: linear-gradient(120deg,#E0F2FE 0%, #BAE6FD 22%, #E0F7FF 48%, #BFDBFE 74%, #F0F9FF 100%); background-size: 200% 200%; animation: coolDrift 18s ease-in-out infinite; min-height:100vh; }
+  /* PERF: static gradient (no full-page repaint). Same look, ~0 compositing cost. */
+  body { font-family: 'Nunito', sans-serif; background: linear-gradient(120deg,#E0F2FE 0%, #BAE6FD 22%, #E0F7FF 48%, #BFDBFE 74%, #F0F9FF 100%); min-height:100vh; }
   @keyframes coolDrift { 0%,100%{ background-position: 0% 40%; } 50%{ background-position: 100% 60%; } }
   body::before { content:''; position:fixed; inset:0; z-index:0; pointer-events:none; background:
     radial-gradient(600px 320px at 12% 8%, rgba(56,189,248,.28), transparent 60%),
     radial-gradient(700px 360px at 88% 18%, rgba(2,132,199,.20), transparent 60%),
     radial-gradient(600px 420px at 50% 100%, rgba(125,211,252,.30), transparent 60%); }
   .font-poppins { font-family:'Poppins',sans-serif; }
-  .glass { background: rgba(255,255,255,0.68); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(186,230,253,0.9); box-shadow: 0 10px 30px rgba(2,132,199,.10); }
-  .glass-strong { background: rgba(255,255,255,0.90); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(186,230,253,.9); }
-  .blob { position: fixed; border-radius: 50%; filter: blur(95px); opacity:.55; pointer-events:none; z-index:0; animation: float 12s ease-in-out infinite; }
+  .glass { background: rgba(255,255,255,0.68); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(186,230,253,0.9); box-shadow: 0 10px 30px rgba(2,132,199,.10); }
+  .glass-strong { background: rgba(255,255,255,0.90); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(186,230,253,.9); }
+  /* PERF: static blobs (blur + infinite float animated 3 huge layers before). */
+  .blob { position: fixed; border-radius: 50%; filter: blur(60px); opacity:.5; pointer-events:none; z-index:0; animation: none; }
   @keyframes float { 0%,100%{ transform: translateY(0) scale(1);} 50%{ transform: translateY(-24px) scale(1.06);} }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  }
   .sidebar-link.active { background: linear-gradient(135deg,#0284C7,#0EA5E9 55%,#38BDF8); color:white; box-shadow:0 10px 25px rgba(2,132,199,.45), 0 0 0 1px rgba(186,230,253,.6) inset; }
   .sidebar-link.active .sub { color: rgba(255,255,255,.88); }
   ::-webkit-scrollbar { width:8px; height:8px; }
@@ -129,7 +134,7 @@ tailwind.config = {
   .dojo-name { margin-top:8px; font-weight:800; font-size:13.5px; color:#0C4A6E; text-align:center; line-height:1.2; }
   html.dark .dojo-name { color:#E2E8F0; }
   .dojo-add { border-style:dashed !important; border-color:#38BDF8 !important; color:#0284C7; background:linear-gradient(180deg,#F0F9FF,#E0F2FE) !important; }
-  .dojo-dock { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:45; background:rgba(255,255,255,.94); backdrop-filter:blur(20px); border:1px solid rgba(125,211,252,.8); border-radius:28px; box-shadow:0 18px 50px rgba(2,132,199,.25); display:flex; align-items:flex-end; gap:2px; padding:8px 14px; }
+  .dojo-dock { position:fixed; bottom:12px; left:50%; transform:translateX(-50%); z-index:45; background:rgba(255,255,255,.94); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border:1px solid rgba(125,211,252,.8); border-radius:28px; box-shadow:0 18px 50px rgba(2,132,199,.25); display:flex; align-items:flex-end; gap:2px; padding:8px 14px; }
   html.dark .dojo-dock { background:rgba(15,23,42,.95); border-color:#334155; }
   .dock-btn { display:flex; flex-direction:column; align-items:center; gap:3px; padding:8px 16px; border-radius:18px; font-size:10px; font-weight:900; color:#64748B; transition:all .2s; min-width:72px; }
   .dock-btn:hover { background:#E0F2FE; color:#0284C7; }
@@ -141,6 +146,12 @@ tailwind.config = {
   .dojo-tile.everyone-tile { overflow:hidden; }
   .dojo-tile.everyone-tile::after { content:''; position:absolute; inset:-40%; background: conic-gradient(from 0deg, transparent 0 40%, rgba(56,189,248,.28) 50%, transparent 60% 100%); animation: everyoneSpin 3.2s linear infinite; pointer-events:none; }
   @keyframes everyoneSpin { to { transform: rotate(360deg); } }
+  /* ---------- Attendance: absent students are greyed out ---------- */
+  .dojo-tile.absent-tile { opacity:.55; filter:grayscale(.92); border-style:dashed !important; border-color:#94A3B8 !important; }
+  .dojo-tile.absent-tile:hover { transform:none; box-shadow:0 4px 14px rgba(2,132,199,.08); border-color:#94A3B8 !important; }
+  .dojo-tile.absent-tile .avatar-wrap { filter:grayscale(1); opacity:.65; }
+  .dojo-tile.absent-tile .dojo-name { color:#64748B; text-decoration:line-through; }
+  .absent-badge { position:absolute; bottom:52px; left:50%; transform:translateX(-50%); z-index:3; background:rgba(71,85,105,.92); color:#fff; font-size:10px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; border-radius:999px; padding:2px 10px; pointer-events:none; white-space:nowrap; }
 
   /* ---------- Point color animations (MEGA +1 celebration) ---------- */
   @keyframes tilePop { 0%{transform:scale(1)} 35%{transform:scale(1.07) rotate(-1.2deg)} 70%{transform:scale(.97)} 100%{transform:scale(1)} }
@@ -224,7 +235,7 @@ tailwind.config = {
   section.scroll-anchor { scroll-margin-top: 110px; }
 
   /* ---------- Dark mode (deep ocean blue) ---------- */
-  html.dark body { background: linear-gradient(135deg,#020617 0%, #082F49 38%, #0C4A6E 68%, #020617 100%); color:#E0F2FE; animation: coolDrift 22s ease-in-out infinite; background-size:200% 200%; }
+  html.dark body { background: linear-gradient(135deg,#020617 0%, #082F49 38%, #0C4A6E 68%, #020617 100%); color:#E0F2FE; }
   html.dark body::before { background:
     radial-gradient(600px 320px at 12% 8%, rgba(14,165,233,.22), transparent 60%),
     radial-gradient(700px 360px at 88% 18%, rgba(56,189,248,.14), transparent 60%),
@@ -542,7 +553,7 @@ tailwind.config = {
       <div class="flex flex-wrap items-center gap-2 mb-3">
         <div class="relative flex-1 min-w-[160px]">
           <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
-          <input id="searchInput" oninput="renderGrid()" type="text" data-i18n-placeholder="search_ph" placeholder="Search monsters...  ( / )" class="w-full glass rounded-2xl pl-10 pr-4 py-2.5 text-sm font-bold placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm" />
+          <input id="searchInput" oninput="onSearchInput()" type="text" data-i18n-placeholder="search_ph" placeholder="Search monsters...  ( / )" class="w-full glass rounded-2xl pl-10 pr-4 py-2.5 text-sm font-bold placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm" />
         </div>
         <div class="flex items-center gap-2">
           <select id="sortSelect" onchange="renderGrid()" class="glass rounded-2xl px-3 py-2.5 text-[13px] font-extrabold text-slate-600 outline-none shadow-sm cursor-pointer">
@@ -555,6 +566,10 @@ tailwind.config = {
           </button>
           <button onclick="openBulkAddModal('photo')" title="Import from photo" class="bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-700 rounded-2xl px-3 py-2.5 text-[13px] font-extrabold flex items-center gap-2 shadow-sm hover:-translate-y-0.5 transition-all active:scale-95">
             <i data-lucide="scan-text" class="w-4 h-4"></i> <span class="hidden md:inline" data-i18n="bulk_photo">Photo</span>
+          </button>
+          <button onclick="openAttendanceModal()" title="Mark attendance" class="bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-700 rounded-2xl px-4 py-2.5 text-[13px] font-extrabold flex items-center gap-2 shadow-sm hover:-translate-y-0.5 transition-all active:scale-95">
+            <i data-lucide="user-check" class="w-4 h-4"></i> <span data-i18n="attendance">Attendance</span>
+            <span id="absentCountBadge" class="hidden bg-slate-500 text-white text-[11px] rounded-full px-2 py-0.5 min-w-[24px] text-center">0</span>
           </button>
           <button onclick="openRandomPicker()" class="bg-gradient-to-r from-amber-400 to-orange-500 text-white rounded-2xl px-4 py-2.5 text-[13px] font-extrabold items-center gap-2 shadow-md hover:-translate-y-0.5 transition-all active:scale-95 hidden sm:flex">
             <i data-lucide="dices" class="w-4 h-4"></i> <span data-i18n="pick_random">Pick Random</span>
@@ -608,7 +623,7 @@ tailwind.config = {
 
           <!-- Random picker card -->
           <div class="glass rounded-3xl p-5 shadow-card relative overflow-hidden group">
-            <div class="absolute -top-8 -right-8 w-28 h-28 bg-amber-200/50 rounded-full blur-xl"></div>
+            <div class="absolute -top-8 -right-8 w-28 h-28 bg-amber-200/50 rounded-full blur-xl pointer-events-none"></div>
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-md"><i data-lucide="dices" class="w-6 h-6"></i></div>
               <div><h4 class="font-extrabold" data-i18n="random_picker">Random Picker</h4><p class="text-[12px] font-bold text-slate-500" data-i18n="cold_call">Cold-call with fun</p></div>
@@ -619,15 +634,15 @@ tailwind.config = {
 
           <!-- Timer card -->
           <div class="glass rounded-3xl p-5 shadow-card relative overflow-hidden">
-            <div class="absolute -top-8 -right-8 w-28 h-28 bg-sky-200/60 rounded-full blur-xl"></div>
+            <div class="absolute -top-8 -right-8 w-28 h-28 bg-sky-200/60 rounded-full blur-xl pointer-events-none"></div>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
                 <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-400 to-indigo-500 flex items-center justify-center text-white shadow-md"><i data-lucide="timer" class="w-6 h-6"></i></div>
                 <div><h4 class="font-extrabold" data-i18n="class_timer">Class Timer</h4><p class="text-[12px] font-bold text-slate-500" data-i18n="focus_sub">Focus & transitions</p></div>
               </div>
-              <div class="flex bg-slate-100 rounded-xl p-0.5 text-[11px] font-extrabold">
-                <button id="modeCountdownBtn" onclick="setTimerMode('countdown')" class="px-2.5 py-1.5 rounded-lg bg-white shadow text-indigo-700">Count</button>
-                <button id="modeStopwatchBtn" onclick="setTimerMode('stopwatch')" class="px-2.5 py-1.5 rounded-lg text-slate-500">Watch</button>
+              <div class="flex bg-slate-100 rounded-xl p-1 text-[12px] font-extrabold relative z-10">
+                <button id="modeCountdownBtn" type="button" onclick="setTimerMode('countdown')" class="px-3.5 py-2 rounded-lg bg-white shadow text-indigo-700 cursor-pointer">Count</button>
+                <button id="modeStopwatchBtn" type="button" onclick="setTimerMode('stopwatch')" class="px-3.5 py-2 rounded-lg text-slate-500 cursor-pointer">Watch</button>
               </div>
             </div>
             <div class="flex items-center gap-4 mt-4">
@@ -648,6 +663,16 @@ tailwind.config = {
                   <button onclick="setTimerPreset(600)" class="flex-1 bg-white border border-slate-200 rounded-xl py-1.5 text-[12px] font-extrabold hover:border-indigo-300 hover:text-indigo-700 transition-all">10m</button>
                 </div>
                 <div class="flex gap-1.5 mt-1.5">
+                  <div class="flex-[2] flex items-center bg-white rounded-xl border border-slate-200 px-2 overflow-hidden">
+                    <input id="customMinInput" type="number" min="0" max="180" value="5" title="Minutes" class="w-full min-w-0 px-1 py-1.5 text-[12px] font-extrabold outline-none bg-transparent text-center" />
+                    <span class="text-[11px] font-black text-slate-400 shrink-0">m</span>
+                    <span class="text-slate-300 font-black px-0.5">:</span>
+                    <input id="customSecInput" type="number" min="0" max="59" value="0" title="Seconds" class="w-full min-w-0 px-1 py-1.5 text-[12px] font-extrabold outline-none bg-transparent text-center" />
+                    <span class="text-[11px] font-black text-slate-400 shrink-0">s</span>
+                    <button onclick="setCustomTimer()" title="Set custom time" class="shrink-0 ml-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] font-extrabold rounded-lg px-2.5 py-1.5 transition-all active:scale-95" data-i18n="set">Set</button>
+                  </div>
+                </div>
+                <div class="flex gap-1.5 mt-1.5">
                   <button id="timerStartBtn" onclick="timerToggle()" class="flex-1 bg-indigo-600 text-white rounded-xl py-2 text-[12px] font-extrabold flex items-center justify-center gap-1 hover:bg-indigo-700 transition-all active:scale-95"><i data-lucide="play" class="w-3.5 h-3.5"></i> Start</button>
                   <button onclick="timerReset()" class="flex-1 bg-slate-100 text-slate-600 rounded-xl py-2 text-[12px] font-extrabold flex items-center justify-center gap-1 hover:bg-slate-200 transition-all active:scale-95"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-i18n="reset">Reset</span></button>
                 </div>
@@ -657,7 +682,7 @@ tailwind.config = {
 
           <!-- Group maker card -->
           <div class="glass rounded-3xl p-5 shadow-card relative overflow-hidden">
-            <div class="absolute -top-8 -right-8 w-28 h-28 bg-emerald-200/60 rounded-full blur-xl"></div>
+            <div class="absolute -top-8 -right-8 w-28 h-28 bg-emerald-200/60 rounded-full blur-xl pointer-events-none"></div>
             <div class="flex items-center gap-3">
               <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white shadow-md"><i data-lucide="users" class="w-6 h-6"></i></div>
               <div><h4 class="font-extrabold" data-i18n="group_maker">Group Maker</h4><p class="text-[12px] font-bold text-slate-500" data-i18n="shuffle_teams">Shuffle into teams</p></div>
@@ -843,9 +868,10 @@ tailwind.config = {
         <div id="awardAvatar" class="w-16 h-16 rounded-full border-4 border-white/70 shadow-lg overflow-hidden shrink-0 bg-white/20 flex items-center justify-center text-2xl font-black"></div>
         <div class="flex-1 min-w-0">
           <h3 id="awardStudentName" class="font-poppins font-extrabold text-xl truncate">Student</h3>
-          <div class="flex items-center gap-2 mt-1">
+          <div class="flex items-center gap-2 mt-1 flex-wrap">
             <span id="awardStudentPoints" class="bg-white text-slate-800 font-extrabold text-sm rounded-full px-3 py-1">0 pts</span>
             <button onclick="openStudentModal(selectedStudentId)" class="bg-white/20 hover:bg-white/30 rounded-full px-3 py-1 text-[12px] font-extrabold flex items-center gap-1 transition-all"><i data-lucide="pencil" class="w-3 h-3"></i> Edit</button>
+            <button id="awardAbsentBtn" onclick="toggleAbsentFromAward()" class="bg-white/20 hover:bg-white/30 rounded-full px-3 py-1 text-[12px] font-extrabold flex items-center gap-1 transition-all"><i data-lucide="user-x" class="w-3 h-3"></i> <span id="awardAbsentLabel">Absent</span></button>
           </div>
         </div>
         <button onclick="closeAwardModal()" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
@@ -906,6 +932,29 @@ tailwind.config = {
       </div>
       <p class="text-[11px] font-bold text-slate-400 text-center" data-i18n="whole_class_tip">Tip: ⇧ Shift + click the Everyone tile = instant +1, no popup ⚡</p>
       <button onclick="closeWholeClassModal()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-sm rounded-2xl py-3 transition-all" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ATTENDANCE MODAL (mark absent — greyed out, skipped everywhere) ============ -->
+<div id="attendanceModal" class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 modal-hidden modal-bg">
+  <div class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm" onclick="closeAttendanceModal()"></div>
+  <div class="modal-panel relative w-full sm:max-w-[440px] bg-white rounded-t-[28px] sm:rounded-[28px] shadow-pop overflow-hidden max-h-[92vh] flex flex-col">
+    <div class="bg-gradient-to-r from-indigo-600 to-sky-500 p-5 text-white shrink-0">
+      <div class="flex items-center justify-between">
+        <h3 class="font-poppins font-extrabold text-lg flex items-center gap-2"><i data-lucide="user-check" class="w-5 h-5"></i> <span data-i18n="attendance_title">Attendance</span></h3>
+        <button onclick="closeAttendanceModal()" class="w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 flex items-center justify-center"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <p id="attendanceSub" class="text-indigo-100 text-[13px] font-semibold mt-1">Tap a student to toggle absent</p>
+    </div>
+    <div class="p-4 flex gap-2 shrink-0">
+      <button onclick="markAllPresent()" class="flex-1 bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-200 text-emerald-700 font-extrabold text-[12px] rounded-2xl py-2.5 transition-all active:scale-95" data-i18n="all_present">All present ✓</button>
+      <button onclick="markAllAbsent()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-[12px] rounded-2xl py-2.5 transition-all active:scale-95" data-i18n="all_absent">All absent</button>
+    </div>
+    <div id="attendanceList" class="px-4 pb-3 space-y-2 overflow-y-auto"></div>
+    <div class="p-4 pt-1 shrink-0">
+      <p class="text-[11px] font-bold text-slate-400 text-center" data-i18n="attendance_tip">Absent students are greyed out, skipped by Pick Random & Whole-Class points.</p>
+      <button onclick="closeAttendanceModal()" class="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-sm rounded-2xl py-3 transition-all active:scale-95" data-i18n="done">Done</button>
     </div>
   </div>
 </div>
@@ -1373,6 +1422,12 @@ en: {
   bulk_scan:'Scan photo', bulk_change:'Change', bulk_ocr_label:'Detected names (editable — fix mistakes before adding)',
   bulk_preview:'Preview', bulk_preview_empty:'Nothing detected yet — paste names or scan a photo.',
   have_list:'Have a whole list? Paste names / scan photo →',
+  attendance:'Attendance', attendance_title:'Attendance — who is absent?',
+  attendance_sub:'Tap a student to toggle absent',
+  all_present:'All present ✓', all_absent:'All absent',
+  attendance_tip:'Absent students are greyed out, skipped by Pick Random & Whole-Class points.',
+  done:'Done', absent:'Absent', present:'Present ✓', set:'Set',
+  absent_skipped:'absent skipped',
 },
 ar: {
   tagline:'فصول دراسية ممتعة', nav_students:'الطلاب', nav_toolkit:'الأدوات', nav_reports:'التقارير',
@@ -1443,6 +1498,12 @@ ar: {
   bulk_scan:'امسح الصورة', bulk_change:'تغيير', bulk_ocr_label:'الأسماء المكتشفة (قابلة للتعديل)',
   bulk_preview:'معاينة', bulk_preview_empty:'لا شيء بعد — الصق الأسماء أو امسح صورة.',
   have_list:'لديك قائمة كاملة؟ الصق الأسماء / امسح صورة',
+  attendance:'الحضور', attendance_title:'الحضور — من الغائب؟',
+  attendance_sub:'انقر على طالب لتبديل الغياب',
+  all_present:'الكل حاضر ✓', all_absent:'الكل غائب',
+  attendance_tip:'الطلاب الغائبون يظهرون بالرمادي ويُتخطون في الاختيار العشوائي ونقاط الصف.',
+  done:'تم', absent:'غائب', present:'حاضر ✓', set:'تعيين',
+  absent_skipped:'غائب يُتخطى',
   bulk_paste_ph:'سارة أحمد\nليام\nأوليفيا خالد\n... اسم واحد في كل سطر هو الأفضل'
 }
 };
@@ -1458,7 +1519,7 @@ function setLanguage(lang){
   applyLanguage();
   try{ saveStateRefreshOnly(); }catch(e){}
   renderAll();
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function saveStateRefreshOnly(){ /* language is stored separately; no state write needed */ }
 function applyLanguage(){
@@ -1526,6 +1587,7 @@ function ensureMonsterSeeds(){
   state.students.forEach(s=>{
     if(s.monsterSeed===undefined || s.monsterSeed===null){ s.monsterSeed = randomMonsterSeed(); dirty = true; }
     if(s.colorIndex===undefined){ s.colorIndex = 0; dirty = true; }
+    if(s.absent===undefined){ s.absent = false; dirty = true; }
   });
   if(dirty){ try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){} }
 }
@@ -1552,10 +1614,127 @@ function saveState(){
     }
   }
 }
+/* ---------- PERF helpers: batched icons, debounced saves, cached monsters ---------- */
+let _iconRaf = 0;
+function refreshIcons(){
+  if(!window.lucide) return;
+  if(_iconRaf) return; // collapse many calls into one per frame
+  _iconRaf = requestAnimationFrame(function(){
+    _iconRaf = 0;
+    try{ window.lucide.createIcons(); }catch(e){}
+  });
+}
+let _saveT = null, _savePending = false;
+function saveStateSoon(){
+  // Debounce localStorage writes (stringify of photo-heavy state blocks taps)
+  if(_saveT){ _savePending = true; return; }
+  saveState();
+  _saveT = setTimeout(function(){ _saveT = null; if(_savePending){ _savePending = false; try{ saveState(); }catch(e){} } }, 500);
+}
+const _monsterCache = new Map();
+function cachedChubby(seed, extraCls){
+  const key = (seed >>> 0) + '|' + (extraCls || '');
+  let v = _monsterCache.get(key);
+  if(v) return v;
+  v = chubbySVG(seed, extraCls);
+  if(_monsterCache.size > 400){ const k = _monsterCache.keys().next().value; _monsterCache.delete(k); }
+  _monsterCache.set(key, v);
+  return v;
+}
+let _searchT = null;
+function onSearchInput(){
+  if(_searchT) clearTimeout(_searchT);
+  _searchT = setTimeout(function(){ _searchT = null; try{ renderGrid(); }catch(e){} }, 150);
+}
+function historyPanelOpen(){
+  try{ return !document.getElementById('historyPanel').classList.contains('translate-x-full'); }catch(e){ return false; }
+}
 
 /* ---------- Selectors ---------- */
 function activeClassroom(){ return state.classrooms.find(c=>c.id===state.selectedClassroom) || null; }
 function activeStudents(){ return state.students.filter(s=>s.classroomId===state.selectedClassroom); }
+/* ---------- Attendance: absent students are greyed out & skipped ---------- */
+function isAbsent(s){ return !!(s && s.absent); }
+function presentStudents(){ return activeStudents().filter(s=>!isAbsent(s)); }
+function absentStudents(){ return activeStudents().filter(s=>isAbsent(s)); }
+function toggleAbsent(studentId){
+  const s = state.students.find(x=>x.id===studentId);
+  if(!s) return;
+  s.absent = !s.absent;
+  saveState(); renderGrid(); renderDojoPills(); updateAbsentBadge();
+  try{
+    const m = document.getElementById('attendanceModal');
+    if(m && m.classList.contains('modal-visible')) renderAttendanceList();
+  }catch(e){}
+  SFX.click();
+}
+function toggleAbsentFromAward(){
+  if(!selectedStudentId) return;
+  const s = state.students.find(x=>x.id===selectedStudentId);
+  if(!s) return;
+  s.absent = !s.absent;
+  saveState(); renderGrid(); renderDojoPills(); updateAbsentBadge(); refreshAwardAbsentBtn();
+  toast(s.absent ? (s.firstName + ' marked absent 🌙') : (s.firstName + ' marked present ✓'));
+  SFX.click();
+}
+function refreshAwardAbsentBtn(){
+  const s = state.students.find(x=>x.id===selectedStudentId);
+  const lbl = document.getElementById('awardAbsentLabel');
+  const btn = document.getElementById('awardAbsentBtn');
+  if(!lbl || !btn) return;
+  if(s && s.absent){ lbl.textContent = t('present'); btn.classList.add('!bg-amber-400/40'); }
+  else { lbl.textContent = t('absent'); btn.classList.remove('!bg-amber-400/40'); }
+  refreshIcons();
+}
+function updateAbsentBadge(){
+  const n = absentStudents().length;
+  const b = document.getElementById('absentCountBadge');
+  if(!b) return;
+  b.textContent = n;
+  b.classList.toggle('hidden', n===0);
+  b.className = n===0
+    ? 'hidden bg-slate-500 text-white text-[11px] rounded-full px-2 py-0.5 min-w-[24px] text-center'
+    : 'bg-amber-500 text-white text-[11px] rounded-full px-2 py-0.5 min-w-[24px] text-center';
+}
+function openAttendanceModal(){
+  if(!state.selectedClassroom || !state.classrooms.length){ toast(currentLang==='ar' ? 'أنشئ فصلاً أولاً.' : 'Create a classroom first.', 'error'); return; }
+  if(!activeStudents().length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً.' : 'Add students first.', 'error'); return; }
+  renderAttendanceList();
+  showModal('attendanceModal');
+  refreshIcons();
+}
+function closeAttendanceModal(){ hideModal('attendanceModal'); }
+function markAllPresent(){
+  activeStudents().forEach(s=>{ s.absent = false; });
+  saveState(); renderGrid(); renderDojoPills(); updateAbsentBadge(); renderAttendanceList(); refreshAwardAbsentBtn();
+  toast(currentLang==='ar' ? 'الكل حاضر ✓' : 'Everyone marked present ✓');
+  SFX.pop();
+}
+function markAllAbsent(){
+  activeStudents().forEach(s=>{ s.absent = true; });
+  saveState(); renderGrid(); renderDojoPills(); updateAbsentBadge(); renderAttendanceList(); refreshAwardAbsentBtn();
+  SFX.click();
+}
+function renderAttendanceList(){
+  const box = document.getElementById('attendanceList');
+  const sub = document.getElementById('attendanceSub');
+  if(!box) return;
+  const kids = [...activeStudents()].sort((a,b)=>(a.firstName+' '+(a.lastName||'')).localeCompare(b.firstName+' '+(b.lastName||'')));
+  const nAbs = kids.filter(isAbsent).length;
+  if(sub) sub.textContent = kids.length + ' ' + t('students_unit') + ' • ' + nAbs + ' ' + t('absent') + (currentLang==='ar' ? ' — انقر للتبديل' : ' — tap to toggle');
+  box.innerHTML = kids.map(s=>{
+    const ab = isAbsent(s);
+    const av = s.photo ? '<img src="'+s.photo+'" class="w-10 h-10 rounded-xl object-cover border-2 border-white shadow shrink-0" alt="" loading="lazy"/>' : '<div class="w-10 h-10 shrink-0">'+cachedChubby(monsterSeedFor(s))+'</div>';
+    return '<button onclick="toggleAbsent(\''+s.id+'\'); renderAttendanceList();" class="w-full flex items-center gap-3 rounded-2xl border-2 p-2.5 text-left transition-all active:scale-[.98] '+(ab?'border-slate-300 bg-slate-100 opacity-70':'border-emerald-200 bg-emerald-50/60 hover:border-emerald-400')+'">'
+      + av
+      + '<div class="flex-1 min-w-0"><p class="font-extrabold text-[14px] truncate '+(ab?'line-through text-slate-500':'text-slate-800')+'">'+esc(s.firstName)+(s.lastName?' '+esc(s.lastName):'')+'</p>'
+      + '<p class="text-[11px] font-bold '+(ab?'text-slate-400':'text-emerald-600')+'">'+(ab?t('absent')+' 🌙 • '+t('absent_skipped'):t('present'))+'</p></div>'
+      + '<span class="shrink-0 w-12 h-7 rounded-full relative transition-all '+(ab?'bg-slate-400':'bg-emerald-500')+'">'
+      + '<span class="absolute top-0.5 w-6 h-6 rounded-full bg-white shadow transition-all '+(ab?'left-0.5':'right-0.5')+'"></span></span>'
+      + '</button>';
+  }).join('');
+  refreshIcons();
+}
 function classPoints(){ return activeStudents().reduce((a,s)=>a+ (s.points||0),0); }
 function classHistory(){
   return state.pointsHistory
@@ -1684,7 +1863,7 @@ const SFX = {
         }catch(e){ g.connect(comp); }
         src.start(t);
       };
-      const claps = 55;
+      const claps = 28;
       for(let i=0;i<claps;i++){
         const t0 = now + Math.pow(Math.random(), 0.65) * dur;
         const baseFreq = 1700 + Math.random()*1400;
@@ -1722,7 +1901,7 @@ const SFX = {
       bedSrc.connect(bedF); bedF.connect(bedG); bedG.connect(comp);
       bedSrc.start(now + 0.05);
       // Foreground shouts: distinct rising "yay!" / "woo!" voices with vowel color
-      const shouts = 11;
+      const shouts = 6;
       const vowels = [
         { f: 850, Q: 2.2 },
         { f: 1250, Q: 2.5 },
@@ -1955,35 +2134,38 @@ function bigCelebrationConfetti(big, tileEl){
   try{
     const now = Date.now();
     // Anti-spam: rapid +1 clicks still get a fun mini-burst from the tile
-    if(now - lastConfettiAt < 450){
+    if(now - lastConfettiAt < 700){
       const o = confettiOriginFromEl(tileEl) || { y: 0.6 };
-      window.confetti({ particleCount: 35, spread: 75, startVelocity: 34, scalar: 1.0, ticks: 130, gravity: 1.0, disableForReducedMotion: true, zIndex: 200, origin: o, colors: ['#10B981','#FBBF24','#0EA5E9','#F43F5E','#A855F7'] });
+      window.confetti({ particleCount: 18, spread: 70, startVelocity: 30, scalar: 1.0, ticks: 110, gravity: 1.0, disableForReducedMotion: true, zIndex: 200, origin: o, colors: ['#10B981','#FBBF24','#0EA5E9','#F43F5E','#A855F7'] });
       return;
     }
     lastConfettiAt = now;
     const colors = ['#10B981','#FBBF24','#F59E0B','#0EA5E9','#4F46E5','#F43F5E','#A855F7','#22D3EE','#FFFFFF'];
-    const base = { colors: colors, disableForReducedMotion: true, zIndex: 200, gravity: 1.0, ticks: 220 };
+    const base = { colors: colors, disableForReducedMotion: true, zIndex: 200, gravity: 1.0, ticks: 180 };
     const tileOrigin = confettiOriginFromEl(tileEl);
     // Burst 1: STAR BLAST straight from the student's tile (the wow moment)
     if(tileOrigin){
-      window.confetti(Object.assign({}, base, { particleCount: big?90:65, spread: 100, startVelocity: 42, scalar: 1.15, shapes: ['star'], origin: tileOrigin }));
-      window.confetti(Object.assign({}, base, { particleCount: big?70:50, spread: 70, startVelocity: 30, scalar: 0.95, origin: tileOrigin }));
+      window.confetti(Object.assign({}, base, { particleCount: big?45:32, spread: 100, startVelocity: 42, scalar: 1.15, shapes: ['star'], origin: tileOrigin }));
     }
-    // Burst 2: big center pop with stars + circles
-    window.confetti(Object.assign({}, base, { particleCount: big?170:120, spread: 100, startVelocity: 44, scalar: 1.05, shapes: ['star','circle'], origin: { y: 0.6 } }));
-    // Burst 3: side cannons
+    // Burst 2: center pop with stars + circles
+    window.confetti(Object.assign({}, base, { particleCount: big?80:55, spread: 100, startVelocity: 44, scalar: 1.05, shapes: ['star','circle'], origin: { y: 0.6 } }));
+    // Burst 3: side cannons (big awards only — skipped for single +1)
+    if(big){
     setTimeout(function(){
-      window.confetti(Object.assign({}, base, { particleCount: big?70:45, angle: 60, spread: 60, startVelocity: 42, scalar: 1.0, shapes: ['star'], origin: { x: 0, y: 0.7 } }));
-      window.confetti(Object.assign({}, base, { particleCount: big?70:45, angle: 120, spread: 60, startVelocity: 42, scalar: 1.0, shapes: ['star'], origin: { x: 1, y: 0.7 } }));
+      window.confetti(Object.assign({}, base, { particleCount: 35, angle: 60, spread: 60, startVelocity: 42, scalar: 1.0, shapes: ['star'], origin: { x: 0, y: 0.7 } }));
+      window.confetti(Object.assign({}, base, { particleCount: 35, angle: 120, spread: 60, startVelocity: 42, scalar: 1.0, shapes: ['star'], origin: { x: 1, y: 0.7 } }));
     }, 160);
-    // Burst 4: golden rain from the top
+    }
+    // Burst 4: golden rain from the top (big awards only)
+    if(big){
     setTimeout(function(){
-      window.confetti(Object.assign({}, base, { particleCount: big?90:55, spread: 120, startVelocity: 22, gravity: 1.3, scalar: 0.95, shapes: ['circle'], colors: ['#FBBF24','#F59E0B','#FDE68A','#FFFFFF','#10B981'], origin: { y: 0.25 } }));
+      window.confetti(Object.assign({}, base, { particleCount: 45, spread: 120, startVelocity: 22, gravity: 1.3, scalar: 0.95, shapes: ['circle'], colors: ['#FBBF24','#F59E0B','#FDE68A','#FFFFFF','#10B981'], origin: { y: 0.25 } }));
     }, 340);
-    // Burst 5 (big awards only): long fireworks finale
+    }
+    // Burst 5 (big awards only): fireworks finale
     if(big){
       setTimeout(function(){
-        window.confetti(Object.assign({}, base, { particleCount: 110, spread: 130, startVelocity: 38, scalar: 1.1, shapes: ['star','circle'], origin: { y: 0.55 } }));
+        window.confetti(Object.assign({}, base, { particleCount: 55, spread: 130, startVelocity: 38, scalar: 1.1, shapes: ['star','circle'], origin: { y: 0.55 } }));
       }, 620);
     }
   }catch(e){}
@@ -1998,7 +2180,7 @@ function toggleSound(preview){
   SFX.enabled = !SFX.enabled; SFX.save(); refreshSoundUI();
   if(SFX.enabled){ if(!playPositiveSound()) SFX.celebrate(false); bigCelebrationConfetti(false); toast('🔊 Sound effects on 👏'); }
   else { try{ stopPointSounds(); }catch(e){} toast('🔇 Sound effects off'); }
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function refreshSoundUI(){
   const icon = SFX.enabled ? 'volume-2' : 'volume-x';
@@ -2007,7 +2189,7 @@ function refreshSoundUI(){
   ['soundIconTop','soundIconSide'].forEach(id=>{ const e=document.getElementById(id); if(e) e.innerHTML = html; });
   const m = document.getElementById('soundIconMobile'); if(m) m.innerHTML = htmlBig;
   const lbl = document.getElementById('soundLabelSide'); if(lbl) lbl.textContent = SFX.enabled ? t('sound_on') : t('sound_muted');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 /* ---------- Theme (light / dark) ---------- */
@@ -2031,7 +2213,7 @@ function refreshThemeUI(){
   const m = document.getElementById('themeIconMobile'); if(m) m.innerHTML = '<i data-lucide="'+icon+'" class="w-5 h-5 text-slate-700"></i>';
   const lbl = document.getElementById('themeLabelSide'); if(lbl) lbl.textContent = dark ? t('theme_light') : t('theme_dark');
   try{ document.querySelector('meta[name="color-scheme"]').content = dark ? 'dark' : 'light'; }catch(e){}
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 /* ---------- Navigation helpers ---------- */
@@ -2087,7 +2269,7 @@ function openSettings(tab){
   refreshSettingsSoundState();
   refreshSettingsStorageInfo();
   showModal('settingsModal');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeSettings(){ hideModal('settingsModal'); }
 function switchSettingsTab(tab){
@@ -2126,7 +2308,7 @@ function resetAllData(){
   closeSettings();
   renderAll();
   SFX.tada();
-  if(window.confetti) confetti({particleCount:100, spread:80, origin:{y:.6}});
+  if(window.confetti) confetti({particleCount:50, spread:80, origin:{y:.6}});
   toast('All data cleared — start fresh! ✨');
 }
 function refreshCrumbs(){
@@ -2142,7 +2324,7 @@ function toast(msg, type){
   el.className = 'toast-in glass-strong rounded-2xl shadow-pop px-4 py-3 flex items-center gap-3 border w-full ' + (isErr ? 'border-rose-200' : 'border-indigo-100');
   el.innerHTML = '<div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 '+(isErr?'bg-rose-500 text-white':'bg-indigo-600 text-white')+'"><i data-lucide="'+(isErr?'alert-circle':'check')+'" class="w-4 h-4"></i></div><p class="text-[13px] font-extrabold text-slate-700 leading-snug">'+esc(msg)+'</p>';
   box.appendChild(el);
-  lucide.createIcons();
+  refreshIcons();
   setTimeout(()=>{ el.style.transition='all .35s'; el.style.opacity='0'; el.style.transform='translateY(10px)'; setTimeout(()=>el.remove(),350); }, 2600);
 }
 /* Banner praise titles rotate in the SAME order as the voice sounds */
@@ -2201,13 +2383,13 @@ function avatarHTML(s, sizeCls){
   if(s.photo){
     return '<div class="'+sizeCls+' rounded-full overflow-hidden border-4 border-white shadow-md shrink-0 bg-slate-100"><img src="'+s.photo+'" alt="'+esc(s.firstName)+'" class="w-full h-full object-cover" /></div>';
   }
-  return '<div class="'+sizeCls+' shrink-0 relative flex items-center justify-center">'+chubbySVG(monsterSeedFor(s))+'</div>';
+  return '<div class="'+sizeCls+' shrink-0 relative flex items-center justify-center">'+cachedChubby(monsterSeedFor(s))+'</div>';
 }
 function monsterTileHTML(s, imgCls){
   if(s.photo){
     return '<img src="'+s.photo+'" alt="'+esc(s.firstName)+'" class="rounded-2xl object-cover border-2 border-slate-100 shadow-sm '+(imgCls||'w-20 h-20')+'" />';
   }
-  return '<div class="'+(imgCls||'w-20 h-20')+'">'+chubbySVG(monsterSeedFor(s))+'</div>';
+  return '<div class="'+(imgCls||'w-20 h-20')+'">'+cachedChubby(monsterSeedFor(s))+'</div>';
 }
 function pointsPill(p){
   let cls = 'bg-slate-100 text-slate-500';
@@ -2228,14 +2410,15 @@ function renderAll(){
   updateTimerUI();
   refreshCrumbs();
   renderDojoPills();
+  updateAbsentBadge();
   const sBtn = document.getElementById('dojoTabStudents'), gBtn = document.getElementById('dojoTabGroups');
   if(sBtn) sBtn.classList.toggle('on', classTab==='students');
   if(gBtn) gBtn.classList.toggle('on', classTab==='groups');
   const sw = document.getElementById('dojoStudentsWrap'), gw = document.getElementById('dojoGroupsWrap');
   if(sw) sw.classList.toggle('hidden', classTab!=='students');
   if(gw) gw.classList.toggle('hidden', classTab!=='groups');
-  const em = document.getElementById('emptyMonster'); if(em) em.innerHTML = chubbySVG(999);
-  if(window.lucide) lucide.createIcons();
+  const em = document.getElementById('emptyMonster'); if(em) em.innerHTML = cachedChubby(999);
+  refreshIcons();
 }
 
 function renderClassroomList(){
@@ -2310,6 +2493,12 @@ function badgeClassFor(p, max){
   return '';
 }
 /* Refresh every tile's badge + crown live (leadership can change for others too) */
+function updateEveryoneBadge(){
+  try{
+    const el = document.getElementById('everyonePts');
+    if(el) el.textContent = classPoints();
+  }catch(e){}
+}
 function refreshLeaderBadges(popId){
   try{
     const max = classMaxPoints();
@@ -2336,6 +2525,7 @@ function refreshLeaderBadges(popId){
         } else if(p < 20 && crown){ crown.remove(); }
       }
     });
+    updateEveryoneBadge();
   }catch(e){}
 }
 function renderGrid(){
@@ -2353,7 +2543,7 @@ function renderGrid(){
   empty.classList.toggle('hidden', kids.length>0 || !hasKids ? kids.length>0 : true);
   if(!hasKids){
     grid.innerHTML='';
-    const em=document.getElementById('emptyMonster'); if(em) em.innerHTML = chubbySVG(123456);
+    const em=document.getElementById('emptyMonster'); if(em) em.innerHTML = cachedChubby(123456);
     // Empty state CTA depends on whether any classroom exists yet
     const title = empty.querySelector('h3'), sub = empty.querySelector('p');
     const btn = document.getElementById('emptyAddBtn');
@@ -2371,22 +2561,25 @@ function renderGrid(){
       if(bulkPaste) bulkPaste.classList.remove('hidden');
       if(bulkPhoto) bulkPhoto.classList.remove('hidden');
     }
-    if(window.lucide) lucide.createIcons(); renderDojoPills(); return;
+    refreshIcons(); renderDojoPills(); updateAbsentBadge(); return;
   }
-  if(!kids.length){ grid.innerHTML = '<div class="col-span-full text-center py-10 font-bold text-slate-400">' + t('no_match') + ' “'+esc(q)+'”. ' + t('try_search') + '</div>'; if(window.lucide) lucide.createIcons(); return; }
+  if(!kids.length){ grid.innerHTML = '<div class="col-span-full text-center py-10 font-bold text-slate-400">' + t('no_match') + ' “'+esc(q)+'”. ' + t('try_search') + '</div>'; refreshIcons(); return; }
   const max = classMaxPoints();
   const tiles = kids.map(s=>{
     const p = s.points||0;
     const badge = badgeClassFor(p, max);
     const royal = p >= 20;
-    const tileCls = badge === 'rainbow' ? ' rainbow-tile' : (royal ? ' royal-tile' : (badge === 'gold' ? ' leader-tile' : ''));
+    const ab = isAbsent(s);
+    const tileCls = (badge === 'rainbow' ? ' rainbow-tile' : (royal ? ' royal-tile' : (badge === 'gold' ? ' leader-tile' : ''))) + (ab ? ' absent-tile' : '');
     const crown = royal ? '<div class="crown-badge">👑</div>' : '';
-    const monsterInner = s.photo ? '<img src="'+s.photo+'" class="w-[76px] h-[76px] rounded-2xl object-cover border-2 border-slate-100" alt=""/>' : '<div class="w-[84px] h-[84px]">'+chubbySVG(monsterSeedFor(s))+'</div>';
+    const monsterInner = s.photo ? '<img src="'+s.photo+'" class="w-[76px] h-[76px] rounded-2xl object-cover border-2 border-slate-100" alt="" loading="lazy"/>' : '<div class="w-[84px] h-[84px]">'+cachedChubby(monsterSeedFor(s))+'</div>';
     const monster = '<div class="avatar-wrap">' + crown + monsterInner + '</div>';
+    const absentTag = ab ? '<div class="absent-badge">🌙 '+t('absent')+'</div>' : '';
     return '<div id="card-'+s.id+'" onclick="openAwardModal(\''+s.id+'\')" class="dojo-tile group'+tileCls+'">'
       + '<div class="dojo-pts '+badge+'" id="pill-'+s.id+'">'+p+'</div>'
       + '<button title="Edit" onclick="event.stopPropagation(); openStudentModal(\''+s.id+'\')" class="absolute top-2 left-2 w-7 h-7 rounded-lg bg-slate-100/90 text-slate-400 hover:bg-indigo-100 hover:text-indigo-600 items-center justify-center hidden group-hover:flex z-10"><i data-lucide="pencil" class="w-3.5 h-3.5 pointer-events-none"></i></button>'
       + monster
+      + absentTag
       + '<div class="dojo-name">'+esc(s.firstName)+(s.lastName?' '+esc(s.lastName):'')+'</div>'
       + '<div class="flex gap-1.5 mt-2 w-full px-1">'
       + '<button title="+1" onclick="event.stopPropagation(); quickAwardTo(\''+s.id+'\',1)" class="flex-1 h-8 rounded-xl bg-emerald-50 hover:bg-emerald-500 hover:text-white text-emerald-600 font-black text-sm transition-all active:scale-95">+1</button>'
@@ -2394,11 +2587,12 @@ function renderGrid(){
       + '</div></div>';
   }).join('');
   // Everyone tile (like "Class" in screenshot) + Add tile — tap opens +1 / −1 chooser
+  // NOTE: Everyone stays pinned first (not part of sorting) so it's always easy to find.
   const total = classPoints();
   const everyone = '<div onclick="openWholeClassModal(event)" title="Whole class points — click to choose +1 or −1 • Shift+Click = instant +1" class="dojo-tile everyone-tile" style="background:linear-gradient(180deg,#F8FAFC,#EEF2FF);">'
-    + '<div class="dojo-pts" style="background:#4F46E5">'+total+'</div>'
+    + '<div class="dojo-pts" id="everyonePts" style="background:#4F46E5">'+total+'</div>'
     + '<div class="flex -space-x-3">'
-    + '<div class="w-10 h-10">'+chubbySVG(11)+'</div><div class="w-10 h-10">'+chubbySVG(77)+'</div><div class="w-10 h-10">'+chubbySVG(199)+'</div>'
+    + '<div class="w-10 h-10">'+cachedChubby(11)+'</div><div class="w-10 h-10">'+cachedChubby(77)+'</div><div class="w-10 h-10">'+cachedChubby(199)+'</div>'
     + '</div><div class="dojo-name">'+t('everyone')+'</div>'
     + '<div class="text-[11px] font-bold text-indigo-500">'+t('everyone_sub')+'</div>'
     + '<div class="flex gap-1.5 mt-2 w-full px-1">'
@@ -2410,21 +2604,24 @@ function renderGrid(){
     + '<div class="dojo-name" style="color:#0EA5E9">'+t('add_tile')+'</div></div>';
   grid.innerHTML = everyone + tiles + add;
   renderDojoPills();
-  if(window.lucide) lucide.createIcons();
+  updateAbsentBadge();
+  refreshIcons();
 }
 function quickAwardTo(id, delta){
   selectedStudentId = id;
   applyPoints(id, delta, delta>0?(currentLang==='ar'?'ثناء سريع':'Quick Praise'):(currentLang==='ar'?'تنبيه سريع':'Quick Correction'), delta>0?'positive':'needs-work');
 }
 function openWholeClassModal(ev){
-  const kids = activeStudents();
-  if(!kids.length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً.' : 'Add students first.', 'error'); return; }
+  const kids = presentStudents();
+  const nAbs = absentStudents().length;
+  if(!activeStudents().length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً.' : 'Add students first.', 'error'); return; }
+  if(!kids.length){ toast(currentLang==='ar' ? 'الجميع غائب اليوم 🌙' : 'Everyone is marked absent today 🌙', 'error'); return; }
   if(ev && ev.shiftKey){ doAwardWholeClass(1, true); return; }
   const c = activeClassroom();
   const sub = document.getElementById('wholeClassSub');
-  if(sub) sub.textContent = (c ? ((c.emoji||'')+' '+c.name+' • ') : '') + kids.length + ' ' + t('students_unit');
+  if(sub) sub.textContent = (c ? ((c.emoji||'')+' '+c.name+' • ') : '') + kids.length + ' ' + t('students_unit') + (nAbs ? ' • ' + nAbs + ' ' + t('absent_skipped') + ' 🌙' : '');
   showModal('wholeClassModal');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeWholeClassModal(){ hideModal('wholeClassModal'); }
 function chooseWholeClass(delta){
@@ -2434,41 +2631,56 @@ function chooseWholeClass(delta){
 }
 function awardWholeClass(delta, ev){
   if(ev && ev.stopPropagation) ev.stopPropagation();
-  const kids = activeStudents();
-  if(!kids.length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً.' : 'Add students first.', 'error'); return; }
+  if(!activeStudents().length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً.' : 'Add students first.', 'error'); return; }
+  if(!presentStudents().length){ toast(currentLang==='ar' ? 'الجميع غائب اليوم 🌙' : 'Everyone is marked absent today 🌙', 'error'); return; }
   delta = delta >= 0 ? 1 : -1;
   if(ev && ev.shiftKey){ doAwardWholeClass(delta, true); return; }
+  const nAbs = absentStudents().length;
+  const skipNote = nAbs ? (currentLang==='ar' ? ' (سيُتخطى '+nAbs+' غائب 🌙)' : ' ('+nAbs+' absent skipped 🌙)') : '';
   if(delta > 0){
     askConfirm(
       currentLang==='ar' ? 'منح الصف كله +1؟' : 'Award whole class +1?',
-      currentLang==='ar' ? 'كل وحش في هذا الصف سيحصل على +1. (تلميح: اضغط ⇧ Shift وانقر للفوري بدون نافذة.)' : 'Every monster in this class gets +1 for great work. (Tip: hold ⇧ Shift and click for instant, no popup.)',
+      currentLang==='ar' ? 'كل وحش حاضر في هذا الصف سيحصل على +1.'+skipNote+' (تلميح: اضغط ⇧ Shift وانقر للفوري بدون نافذة.)' : 'Every PRESENT monster in this class gets +1 for great work.'+skipNote+' (Tip: hold ⇧ Shift and click for instant, no popup.)',
       ()=>doAwardWholeClass(1, false)
     );
   } else {
     askConfirm(
       currentLang==='ar' ? 'خصم −1 من الصف كله؟' : 'Remove −1 from whole class?',
-      currentLang==='ar' ? 'كل وحش في هذا الصف سيفقد نقطة (−1). (تلميح: اضغط ⇧ Shift مع زر −1 للفوري بدون نافذة.)' : 'Every monster in this class loses 1 point (−1). (Tip: hold ⇧ Shift and click −1 for instant, no popup.)',
+      currentLang==='ar' ? 'كل وحش حاضر في هذا الصف سيفقد نقطة (−1).'+skipNote+' (تلميح: اضغط ⇧ Shift مع زر −1 للفوري بدون نافذة.)' : 'Every PRESENT monster in this class loses 1 point (−1).'+skipNote+' (Tip: hold ⇧ Shift and click −1 for instant, no popup.)',
       ()=>doAwardWholeClass(-1, false)
     );
   }
   SFX.pop();
 }
 function doAwardWholeClass(delta, instant){
-  const kids = activeStudents();
-  if(!kids.length) return;
+  const kids = presentStudents();
+  const nAbs = absentStudents().length;
+  if(!kids.length){ toast(currentLang==='ar' ? 'الجميع غائب اليوم 🌙' : 'Everyone is marked absent today 🌙', 'error'); return; }
   delta = delta >= 0 ? 1 : -1;
   kids.forEach(s=>{ s.points=(s.points||0)+delta; });
   const pos = delta > 0;
-  state.pointsHistory.push({ id: uid(), studentId:'system', classroomId: state.selectedClassroom, studentName:'Everyone', type: pos?'positive':'needs-work', behavior: pos ? (instant ? 'Whole-class praise (instant ⚡)' : 'Whole-class praise') : (instant ? 'Whole-class correction (instant ⚡)' : 'Whole-class correction'), delta: delta * kids.length, timestamp: Date.now() });
+  state.pointsHistory.push({ id: uid(), studentId:'system', classroomId: state.selectedClassroom, studentName:'Everyone (present)', type: pos?'positive':'needs-work', behavior: pos ? (instant ? 'Whole-class praise (instant ⚡)' : 'Whole-class praise') : (instant ? 'Whole-class correction (instant ⚡)' : 'Whole-class correction'), delta: delta * kids.length, timestamp: Date.now() });
   saveState(); renderAll();
-  const tiles = Array.from(document.querySelectorAll('[id^="card-"]'));
+  // only animate tiles of students who actually got points (skip absent)
+  const presentIds = {};
+  kids.forEach(s=>{ presentIds['card-'+s.id] = true; });
+  const tiles = Array.from(document.querySelectorAll('[id^="card-"]')).filter(el=>presentIds[el.id]);
+  const skipMsg = nAbs ? (currentLang==='ar' ? ' ('+nAbs+' غائب يُتخطى 🌙)' : ' ('+nAbs+' absent skipped 🌙)') : '';
   if(pos){
     if(!playPositiveSound()) SFX.celebrate(true);
     bigCelebrationConfetti(true, null);
     try{ triggerPlusFlash(); }catch(e){}
-    toast(instant ? 'Whole class +1 instantly! ⚡🎉👏' : 'Whole class +1! 🎉👏 Well done!');
-    // staggered MEGA wave across all tiles
+    toast(instant ? 'Whole class +1 instantly! ⚡🎉👏' + skipMsg : 'Whole class +1! 🎉👏 Well done!' + skipMsg);
+    // staggered wave across tiles (PERF: full particles on first 12, cheap flash after)
     tiles.forEach((tile, i)=>{
+      if(i >= 12){
+        setTimeout(()=>{
+          tile.classList.remove('celebrate','flash-pos'); void tile.offsetWidth;
+          tile.classList.add('flash-pos');
+          setTimeout(()=>tile.classList.remove('flash-pos','celebrate'), 900);
+        }, i * 30);
+        return;
+      }
       setTimeout(()=>{
         tile.classList.remove('celebrate','flash-pos'); void tile.offsetWidth;
         tile.classList.add('flash-pos');
@@ -2485,9 +2697,17 @@ function doAwardWholeClass(delta, instant){
     try{ stopPointSounds(); }catch(e){}
     SFX.bad();
     try{ triggerMinusAlert(null); }catch(e){}
-    toast(instant ? 'Whole class −1 instantly! ⚡' : 'Whole class −1. Let\'s fix it! 💪');
-    // staggered BRUTAL wave across all tiles
+    toast(instant ? 'Whole class −1 instantly! ⚡' + skipMsg : 'Whole class −1. Let\'s fix it! 💪' + skipMsg);
+    // staggered wave across tiles (PERF: full storm on first 12, cheap flash after)
     tiles.forEach((tile, i)=>{
+      if(i >= 12){
+        setTimeout(()=>{
+          tile.classList.remove('shake','flash-neg','flash-pos','celebrate'); void tile.offsetWidth;
+          tile.classList.add('flash-neg');
+          setTimeout(()=>tile.classList.remove('flash-neg'), 800);
+        }, i * 30);
+        return;
+      }
       setTimeout(()=>{
         tile.classList.remove('shake','flash-neg','flash-pos','celebrate'); void tile.offsetWidth;
         tile.classList.add('flash-neg','shake');
@@ -2531,19 +2751,14 @@ function spawnShockwave(tile){
     s.className = 'shockwave green';
     tile.appendChild(s);
     setTimeout(()=>s.remove(), 700);
-    const s2 = document.createElement('div');
-    s2.className = 'shockwave';
-    s2.style.animationDelay = '.08s';
-    tile.appendChild(s2);
-    setTimeout(()=>s2.remove(), 780);
   }catch(e){}
 }
-/* 8 mini stars / emojis that explode out of the monster */
+/* 6 mini stars / emojis that explode out of the monster (PERF: was 8) */
 function spawnStarBurst(tile, big){
   try{
     if(!tile) return;
     tile.querySelectorAll('.star-particle').forEach(el=>el.remove());
-    const emojis = big ? ['⭐','🌟','✨','🎉','👏','💛','⚡','🎊'] : ['⭐','✨','🌟','💛','🎉','✨','⭐','💫'];
+    const emojis = big ? ['⭐','🌟','✨','🎉','👏','💛'] : ['⭐','✨','🌟','💛','🎉','💫'];
     emojis.forEach((em, i)=>{
       const el = document.createElement('div');
       el.className = 'star-particle';
@@ -2626,9 +2841,9 @@ function triggerMinusAlert(tile){
             origin = { x: (r.left + r.width/2) / window.innerWidth, y: (r.top + 40) / window.innerHeight };
           }
         }catch(e){}
-        window.confetti({ particleCount: 45, spread: 65, startVelocity: 32, gravity: 1.6, ticks: 150, scalar: 0.95, shapes: ['square'], colors: ['#DC2626','#991B1B','#F87171','#7F1D1D','#000000'], disableForReducedMotion: true, zIndex: 200, origin: origin });
+        window.confetti({ particleCount: 25, spread: 65, startVelocity: 32, gravity: 1.6, ticks: 150, scalar: 0.95, shapes: ['square'], colors: ['#DC2626','#991B1B','#F87171','#7F1D1D','#000000'], disableForReducedMotion: true, zIndex: 200, origin: origin });
         setTimeout(()=>{
-          window.confetti({ particleCount: 30, spread: 100, startVelocity: 24, gravity: 1.5, ticks: 140, scalar: 0.85, shapes: ['square'], colors: ['#DC2626','#7F1D1D','#FCA5A5'], disableForReducedMotion: true, zIndex: 200, origin: { y: 0.25 } });
+          window.confetti({ particleCount: 16, spread: 100, startVelocity: 24, gravity: 1.5, ticks: 140, scalar: 0.85, shapes: ['square'], colors: ['#DC2626','#7F1D1D','#FCA5A5'], disableForReducedMotion: true, zIndex: 200, origin: { y: 0.25 } });
         }, 220);
       }
     }catch(e){}
@@ -2657,7 +2872,7 @@ function spawnAngerBurst(tile, big){
   try{
     if(!tile) return;
     tile.querySelectorAll('.anger-particle').forEach(el=>el.remove());
-    const emojis = big ? ['💢','⚡','💔','⛈️','😡','🛑','⚠️','💥'] : ['💢','⚡','💔','😠','💢','⚡'];
+    const emojis = big ? ['💢','⚡','💔','⛈️','😡','🛑'] : ['💢','⚡','💔','😠'];
     emojis.forEach((em, i)=>{
       const el = document.createElement('div');
       el.className = 'anger-particle';
@@ -2726,7 +2941,7 @@ function makeGroupsTop(){
   makeGroups();
   const src = document.getElementById('groupResults').innerHTML;
   document.getElementById('groupResultsTop').innerHTML = src || '<p class="text-sm font-bold text-slate-400 col-span-full text-center py-6">No groups yet — hit Shuffle! 🎲</p>';
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function cycleClassroom(){
   if(!state.classrooms.length) return;
@@ -2766,9 +2981,9 @@ function renderHistory(){
   if(!h.length){
     list.innerHTML = '<div class="text-center py-12"><div class="text-5xl">📜</div><p class="font-extrabold mt-3">' + (currentLang==='ar' ? 'لا يوجد نشاط بعد' : 'No activity yet') + '</p><p class="text-[13px] font-bold text-slate-400">' + (currentLang==='ar' ? 'امنح أول نقطة لرؤية السحر هنا ✨' : 'Award your first point to see magic here ✨') + '</p></div>';
   } else {
-    list.innerHTML = h.slice(0,120).map(historyRow).join('');
+    list.innerHTML = h.slice(0,60).map(historyRow).join('');
   }
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 function renderReports(){
@@ -2789,13 +3004,13 @@ function renderReports(){
       + '<div class="w-9 h-9 rounded-xl bg-slate-50 flex items-center justify-center font-black text-lg shrink-0">'+(medals[i]||('<span class="text-sm text-slate-400">'+(i+1)+'</span>'))+'</div>'
       + (s.photo
           ? '<img src="'+s.photo+'" class="w-11 h-11 rounded-2xl object-cover border-2 border-white shadow shrink-0" alt=""/>'
-          : '<div class="w-11 h-11 shrink-0">'+chubbySVG(monsterSeedFor(s))+'</div>')
+          : '<div class="w-11 h-11 shrink-0">'+cachedChubby(monsterSeedFor(s))+'</div>')
       + '<div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2"><p class="font-extrabold text-[14px] truncate">'+esc(s.firstName)+' '+esc(s.lastName)+'</p><span class="font-black text-[14px] '+(s.points>0?'text-emerald-600':s.points<0?'text-rose-500':'text-slate-400')+'">'+s.points+' '+t('pts_unit')+'</span></div>'
       + '<div class="h-2.5 bg-slate-100 rounded-full mt-1.5 overflow-hidden"><div class="h-full rounded-full bar-fill" style="width:'+pct+'%;background:'+bar+'"></div></div></div></div>';
   }).join('');
   const h = classHistory();
-  rh.innerHTML = h.length ? h.slice(0,150).map(historyRow).join('') : '<div class="text-center py-8 font-bold text-slate-400">' + (currentLang==='ar' ? 'لا يوجد نشاط بعد.' : 'No activity yet.') + '</div>';
-  if(window.lucide) lucide.createIcons();
+  rh.innerHTML = h.length ? h.slice(0,80).map(historyRow).join('') : '<div class="text-center py-8 font-bold text-slate-400">' + (currentLang==='ar' ? 'لا يوجد نشاط بعد.' : 'No activity yet.') + '</div>';
+  refreshIcons();
 }
 
 /* =========================================================
@@ -2816,7 +3031,7 @@ function switchView(v){
   SFX.click();
   setActiveNav(isClass ? 'students' : 'reports');
   if(!isClass) renderReports();
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -2848,8 +3063,9 @@ function openAwardModal(studentId, tab){
     ? '<img src="'+s.photo+'" class="w-full h-full object-cover rounded-full" />'
     : chubbySVG(monsterSeedFor(s), 'w-full h-full');
   refreshAwardPoints();
+  refreshAwardAbsentBtn();
   showModal('awardModal');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeAwardModal(){ hideModal('awardModal'); selectedStudentId=null; }
 function refreshAwardPoints(){
@@ -2881,7 +3097,7 @@ function setAwardTab(t){
       + '<p class="text-[12px] font-black '+(pos?'text-emerald-500 group-hover:text-emerald-100':'text-rose-400 group-hover:text-rose-100')+'">'+(b.points>0?'+'+b.points:b.points)+'</p></div>'
       + '</div></button>';
   }).join('');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function awardBehavior(i){
   const list = getBehaviorList(awardTab);
@@ -2897,7 +3113,7 @@ function openCustomBehaviorModal(){
   refreshCustomTypeUI();
   showModal('customBehaviorModal');
   setTimeout(()=>document.getElementById('customBehaviorLabel').focus(), 250);
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeCustomBehaviorModal(){ hideModal('customBehaviorModal'); }
 function setCustomType(t){
@@ -2967,11 +3183,14 @@ function applyPoints(studentId, delta, behavior, type){
   if(!s) return;
   s.points = (s.points||0) + delta;
   state.pointsHistory.push({ id: uid(), studentId: s.id, classroomId: s.classroomId, studentName: s.firstName+' '+s.lastName, type, behavior, delta, timestamp: Date.now() });
-  saveState();
+  saveStateSoon();
   // live badge bump + gold/royal/crown refresh (leadership can change for others too)
   refreshLeaderBadges(s.id);
   const card = document.getElementById('card-'+s.id);
-  renderHeader(); renderHistory(); renderReports(); renderDojoPills();
+  // PERF: only re-render what's visible. History/reports re-render only when open.
+  renderHeader(); renderDojoPills();
+  if(historyPanelOpen()) renderHistory();
+  if(typeof currentView !== 'undefined' && currentView === 'reports') renderReports();
   // re-grab card after renders that don't touch grid (grid isn't re-rendered here, so same node)
   const tile = document.getElementById('card-'+s.id) || card;
   refreshAwardPoints();
@@ -2998,6 +3217,13 @@ function applyPoints(studentId, delta, behavior, type){
   else { SFX.pop(); }
   showBanner(s, delta, behavior);
   setTimeout(closeAwardModal, 420);
+  /* Re-render the grid after the celebration so the Everyone total and the
+     active sort order (e.g. Top points) are always correct. Delayed so the
+     tile pop / floater animation is not cut off. Debounced for spam taps. */
+  try{
+    if(applyPoints._gridT) clearTimeout(applyPoints._gridT);
+    applyPoints._gridT = setTimeout(()=>{ applyPoints._gridT = null; try{ renderGrid(); }catch(e){} }, 950);
+  }catch(e){ try{ renderGrid(); }catch(_){} }
 }
 
 /* ---------- Reset points ---------- */
@@ -3040,7 +3266,7 @@ function openStudentModal(studentId){
   renderMonsterPicker(); renderPhotoPreview();
   showModal('studentModal');
   setTimeout(()=>document.getElementById('firstNameInput').focus(), 250);
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeStudentModal(){ hideModal('studentModal'); editingStudentId=null; stagedPhoto=null; }
 function renderMonsterPicker(){
@@ -3140,9 +3366,9 @@ function saveStudent(){
     }
     toast(fn + ' updated! ✨');
   } else {
-    state.students.push({ id: uid(), classroomId: state.selectedClassroom, firstName: fn, lastName: ln || '', points: 0, photo: stagedPhoto, colorIndex: 0, monster: MONSTERS[Math.floor(Math.random()*MONSTERS.length)], monsterSeed: stagedMonsterSeed >>> 0 });
+    state.students.push({ id: uid(), classroomId: state.selectedClassroom, firstName: fn, lastName: ln || '', points: 0, photo: stagedPhoto, colorIndex: 0, monster: MONSTERS[Math.floor(Math.random()*MONSTERS.length)], monsterSeed: stagedMonsterSeed >>> 0, absent: false });
     toast('Welcome to the class, ' + fn + '! 🎉');
-    if(window.confetti) confetti({particleCount:45, spread:60, origin:{y:.7}});
+    if(window.confetti) confetti({particleCount:25, spread:60, origin:{y:.7}});
   }
   saveState(); closeStudentModal(); renderAll(); playClick();
 }
@@ -3168,7 +3394,7 @@ function openClassroomModal(classId){
   renderEmojiPicker();
   showModal('classroomModal');
   setTimeout(()=>document.getElementById('classNameInput').focus(), 250);
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function closeClassroomModal(){ hideModal('classroomModal'); editingClassId=null; }
 function renderEmojiPicker(){
@@ -3218,28 +3444,32 @@ function setHistoryFilter(f){ historyFilter=f; renderHistory(); playClick(); }
    TOOLKIT — RANDOM PICKER
 ========================================================= */
 function openRandomPicker(){
-  const kids = activeStudents();
-  if(!kids.length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً لاستخدام الاختيار.' : 'Add students first to use the picker.', 'error'); SFX.error(); return; }
+  if(!activeStudents().length){ toast(currentLang==='ar' ? 'أضف طلابًا أولاً لاستخدام الاختيار.' : 'Add students first to use the picker.', 'error'); SFX.error(); return; }
+  const kids = presentStudents();
+  if(!kids.length){ toast(currentLang==='ar' ? 'الجميع غائب اليوم — حدد الحاضرين أولاً 🌙' : 'Everyone is marked absent — mark attendance first 🌙', 'error'); SFX.error(); return; }
   document.getElementById('pickerName').textContent = t('ready_q');
-  document.getElementById('pickerSub').textContent = (currentLang==='ar' ? 'الاختيار من ' : 'Picking from ') + kids.length + (currentLang==='ar' ? ' نجم' : ' stars');
+  const nAbs = absentStudents().length;
+  document.getElementById('pickerSub').textContent = (currentLang==='ar' ? 'الاختيار من ' : 'Picking from ') + kids.length + (currentLang==='ar' ? ' نجم' : ' stars') + (nAbs ? ' • ' + nAbs + ' ' + t('absent_skipped') + ' 🌙' : '');
   document.getElementById('pickerAvatar').innerHTML = '🎲';
   document.getElementById('pickerAvatar').style.background = '';
   SFX.drum();
   showModal('pickerOverlay');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
   spinPicker();
 }
-function closeRandomPicker(){ hideModal('pickerOverlay'); pickerSpinning=false; }
+function closeRandomPicker(){ hideModal('pickerOverlay'); pickerSpinning=false; if(spinPicker._openT){ clearTimeout(spinPicker._openT); spinPicker._openT = null; } }
 function spinPicker(){
-  const kids = activeStudents();
-  if(!kids.length) return;
+  const kids = presentStudents();
+  if(!activeStudents().length) return;
+  if(!kids.length){ toast(currentLang==='ar' ? 'الجميع غائب اليوم 🌙' : 'Everyone is marked absent today 🌙', 'error'); return; }
   if(pickerSpinning) return;
+  if(spinPicker._openT){ clearTimeout(spinPicker._openT); spinPicker._openT = null; }
   pickerSpinning = true;
   const nameEl = document.getElementById('pickerName');
   const avEl = document.getElementById('pickerAvatar');
   const subEl = document.getElementById('pickerSub');
   document.getElementById('pickerSpinBtn').innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> ' + t('picking');
-  lucide.createIcons();
+  refreshIcons();
   let ticks = 0;
   const total = 22 + Math.floor(Math.random()*8);
   const iv = setInterval(()=>{
@@ -3261,10 +3491,25 @@ function spinPicker(){
       avEl.classList.remove('pop-in'); void avEl.offsetWidth; avEl.classList.add('pop-in');
       document.getElementById('pickerPreview').innerHTML = (currentLang==='ar' ? 'آخر اختيار: ' : 'Last picked: ') + '<span class="text-indigo-700">'+esc(winner.firstName)+' '+esc(winner.lastName)+'</span> ⭐';
       playFanfare();
-      if(window.confetti) confetti({particleCount:130, spread:100, origin:{y:.6}});
+      if(window.confetti) confetti({particleCount:60, spread:100, origin:{y:.6}});
       document.getElementById('pickerSpinBtn').innerHTML = '<i data-lucide="sparkles" class="w-4 h-4"></i> ' + t('pick_again');
-      lucide.createIcons();
+      refreshIcons();
       pickerSpinning = false;
+      /* Auto-open the winner's profile (award menu) so you can give points instantly */
+      try{
+        const winId = winner.id;
+        if(spinPicker._openT) clearTimeout(spinPicker._openT);
+        spinPicker._openT = setTimeout(()=>{
+          spinPicker._openT = null;
+          try{
+            const ov = document.getElementById('pickerOverlay');
+            if(!ov || !ov.classList.contains('modal-visible')) return; // user closed it — don't force reopen
+            if(!state.students.find(x=>x.id===winId)) return;
+            closeRandomPicker();
+            setTimeout(()=>openAwardModal(winId), 150);
+          }catch(e){}
+        }, 1100);
+      }catch(e){ pickerSpinning = false; }
     }
   }, 90);
 }
@@ -3273,15 +3518,47 @@ function spinPicker(){
    TOOLKIT — TIMER
 ========================================================= */
 function setTimerMode(m){
-  timerMode = m;
+  timerMode = (m==='stopwatch') ? 'stopwatch' : 'countdown';
   pauseTimer();
-  document.getElementById('modeCountdownBtn').className = 'px-2.5 py-1.5 rounded-lg ' + (m==='countdown'?'bg-white shadow text-indigo-700':'text-slate-500');
-  document.getElementById('modeStopwatchBtn').className = 'px-2.5 py-1.5 rounded-lg ' + (m==='stopwatch'?'bg-white shadow text-indigo-700':'text-slate-500');
+  const cb = document.getElementById('modeCountdownBtn');
+  const sb = document.getElementById('modeStopwatchBtn');
+  if(cb) cb.className = 'px-3.5 py-2 rounded-lg cursor-pointer ' + (timerMode==='countdown'?'bg-white shadow text-indigo-700':'text-slate-500 hover:text-indigo-700');
+  if(sb) sb.className = 'px-3.5 py-2 rounded-lg cursor-pointer ' + (timerMode==='stopwatch'?'bg-white shadow text-indigo-700':'text-slate-500 hover:text-indigo-700');
+  SFX.click();
   timerReset();
 }
 function setTimerPreset(sec){
   if(timerMode!=='countdown') setTimerMode('countdown');
-  pauseTimer(); timerTotal = sec; timerLeft = sec; updateTimerUI(); playClick();
+  pauseTimer(); timerTotal = sec; timerLeft = sec;
+  syncCustomInputs(sec);
+  updateTimerUI(); playClick();
+}
+function syncCustomInputs(totalSec){
+  const m = document.getElementById('customMinInput');
+  const s = document.getElementById('customSecInput');
+  if(m) m.value = Math.floor((totalSec||0)/60);
+  if(s) s.value = (totalSec||0)%60;
+}
+function setCustomTimer(){
+  const mEl = document.getElementById('customMinInput');
+  const sEl = document.getElementById('customSecInput');
+  let mins = parseInt(mEl && mEl.value, 10);
+  let secs = parseInt(sEl && sEl.value, 10);
+  if(isNaN(mins)) mins = 0;
+  if(isNaN(secs)) secs = 0;
+  mins = Math.max(0, Math.min(180, mins));
+  secs = Math.max(0, Math.min(59, secs));
+  if(mEl) mEl.value = mins;
+  if(sEl) sEl.value = secs;
+  const total = mins*60 + secs;
+  if(!total){ toast(currentLang==='ar' ? 'اختر وقتًا أكبر من صفر.' : 'Pick a time greater than zero.', 'error'); SFX.error(); return; }
+  if(timerMode!=='countdown') setTimerMode('countdown');
+  pauseTimer();
+  timerTotal = total; timerLeft = total;
+  document.getElementById('timerStateLabel').textContent = t('ready');
+  updateTimerUI();
+  toast((currentLang==='ar' ? 'المؤقت: ' : 'Timer set: ') + fmtClock(total) + ' ⏱️');
+  SFX.pop();
 }
 function timerToggle(){
   if(timerRunning){ pauseTimer(); SFX.click(); }
@@ -3291,7 +3568,7 @@ function timerToggle(){
     SFX.pop();
     document.getElementById('timerStartBtn').innerHTML = '<i data-lucide="pause" class="w-3.5 h-3.5"></i> ' + t('pause');
     document.getElementById('timerStateLabel').textContent = t('running');
-    lucide.createIcons();
+    refreshIcons();
     timerInt = setInterval(()=>{
       if(timerMode==='countdown'){
         timerLeft -= 1;
@@ -3303,7 +3580,7 @@ function timerToggle(){
       updateTimerUI();
     }, 1000);
   }
-  lucide.createIcons();
+  refreshIcons();
 }
 function pauseTimer(){
   timerRunning = false;
@@ -3311,7 +3588,7 @@ function pauseTimer(){
   document.getElementById('timerStartBtn').innerHTML = '<i data-lucide="play" class="w-3.5 h-3.5"></i> ' + t('start');
   const lbl = document.getElementById('timerStateLabel');
   if(lbl && (lbl.textContent==='Running'||lbl.textContent==='يعمل')) lbl.textContent = t('paused');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function timerReset(){
   pauseTimer();
@@ -3323,7 +3600,7 @@ function timerDone(){
   pauseTimer();
   document.getElementById('timerStateLabel').textContent = t('done');
   SFX.tada();
-  if(window.confetti) confetti({particleCount:120, spread:90, origin:{y:.7}});
+  if(window.confetti) confetti({particleCount:60, spread:90, origin:{y:.7}});
   toast("Time's up! ⏰ Great focus, class!");
 }
 function updateTimerUI(){
@@ -3354,9 +3631,12 @@ function makeGroups(){
   const main = document.getElementById('groupSizeInput');
   // sync the two inputs (Dojo Groups tab + Toolkit card)
   if(top && document.activeElement!==main && top.value) { if(main) main.value = top.value; }
-  const kids = activeStudents();
+  const allKids = activeStudents();
+  const nAbsG = allKids.filter(isAbsent).length;
+  const kids = allKids.filter(s=>!isAbsent(s));
   let size = parseInt((main && main.value) || (top && top.value) || '2', 10);
-  if(!kids.length){ if(box) box.innerHTML = '<p class="text-[12px] font-bold text-slate-400 text-center py-2">Add students first.</p>'; const gt=document.getElementById('groupResultsTop'); if(gt) gt.innerHTML='<p class="text-sm font-bold text-slate-400 col-span-full text-center py-6">Add monsters first 🧸</p>'; return; }
+  if(!allKids.length){ if(box) box.innerHTML = '<p class="text-[12px] font-bold text-slate-400 text-center py-2">Add students first.</p>'; const gt=document.getElementById('groupResultsTop'); if(gt) gt.innerHTML='<p class="text-sm font-bold text-slate-400 col-span-full text-center py-6">Add monsters first 🧸</p>'; return; }
+  if(!kids.length){ if(box) box.innerHTML = '<p class="text-[12px] font-bold text-slate-400 text-center py-2">Everyone is absent 🌙</p>'; const gt2=document.getElementById('groupResultsTop'); if(gt2) gt2.innerHTML='<p class="text-sm font-bold text-slate-400 col-span-full text-center py-6">Everyone is absent 🌙</p>'; toast(currentLang==='ar' ? 'الجميع غائب اليوم 🌙' : 'Everyone is marked absent today 🌙', 'error'); return; }
   if(!size || size<2){ toast('Group size must be at least 2.', 'error'); SFX.error(); return; }
   if(size>kids.length){ toast('Group size is bigger than the class ('+kids.length+').', 'error'); SFX.error(); return; }
   const shuffled = shuffle(kids);
@@ -3373,21 +3653,21 @@ function makeGroups(){
     return '<div class="rounded-2xl p-2.5 border pop-in" style="background:'+p[0]+';border-color:transparent">'
       + '<p class="text-[11px] font-black uppercase tracking-wider" style="color:'+p[1]+'">Group '+(gi+1)+' • '+g.length+'</p>'
       + '<div class="flex flex-wrap gap-1.5 mt-1.5">' + g.map(s=>'<span class="bg-white rounded-full pl-1 pr-2.5 py-1 text-[11px] font-extrabold text-slate-700 shadow-sm flex items-center gap-1.5">'
-        + (s.photo?'<img src="'+s.photo+'" class="w-5 h-5 rounded-xl object-cover"/>':'<span class="w-5 h-5 inline-block">'+chubbySVG(monsterSeedFor(s),'w-5 h-5')+'</span>')
+        + (s.photo?'<img src="'+s.photo+'" class="w-5 h-5 rounded-xl object-cover" loading="lazy"/>':'<span class="w-5 h-5 inline-block">'+cachedChubby(monsterSeedFor(s),'w-5 h-5')+'</span>')
         + esc(s.firstName)+'</span>').join('') + '</div></div>';
   }).join('');
   // mirror into Dojo Groups tab
   const gt = document.getElementById('groupResultsTop');
   if(gt){
     gt.innerHTML = groups.map((g,gi)=>{
-      const monsters = g.map(s=> s.photo ? '<img src="'+s.photo+'" class="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow"/>' : '<div class="w-12 h-12">'+chubbySVG(monsterSeedFor(s))+'</div>').join('');
+      const monsters = g.map(s=> s.photo ? '<img src="'+s.photo+'" class="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow" loading="lazy"/>' : '<div class="w-12 h-12">'+cachedChubby(monsterSeedFor(s))+'</div>').join('');
       const names = g.map(s=>esc(s.firstName)).join(', ');
       return '<div class="bg-white rounded-2xl p-3 border border-slate-100 pop-in"><p class="text-[11px] font-black uppercase tracking-wider text-indigo-600">Group '+(gi+1)+'</p><div class="flex items-center gap-1.5 mt-2">'+monsters+'</div><p class="text-[12px] font-extrabold text-slate-600 mt-2">'+names+'</p></div>';
     }).join('');
   }
   SFX.whoosh();
   setTimeout(()=>SFX.pop(), 180);
-  toast(groups.length + ' groups created! 🤝');
+  toast(groups.length + ' groups created! 🤝' + (nAbsG ? ' ('+nAbsG+' absent skipped 🌙)' : ''));
 }
 
 /* =========================================================
@@ -3419,7 +3699,7 @@ function exportCSV(){
 // keyboard shortcuts + navigation
 document.addEventListener('keydown', e=>{
   const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement?.tagName||'');
-  if(e.key==='Escape'){ closeAwardModal(); closeWholeClassModal(); closeStudentModal(); closeBulkAddModal(); closeClassroomModal(); closeRandomPicker(); closeConfirm(); closeShortcuts(); closeSettings(); toggleHistory(false); return; }
+  if(e.key==='Escape'){ closeAwardModal(); closeWholeClassModal(); closeAttendanceModal(); closeStudentModal(); closeBulkAddModal(); closeClassroomModal(); closeRandomPicker(); closeConfirm(); closeShortcuts(); closeSettings(); toggleHistory(false); return; }
   if(typing){
     if(e.key==='Enter' && document.getElementById('studentModal').classList.contains('modal-visible')) saveStudent();
     if(e.key==='Escape') document.activeElement.blur();
@@ -3521,7 +3801,7 @@ function openBulkAddModal(tab){
   switchBulkTab(bulkTab, true);
   updateBulkPreview();
   showModal('bulkAddModal');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
   setTimeout(function(){
     const f = bulkTab === 'photo' ? document.getElementById('bulkOcrText') : document.getElementById('bulkTextInput');
     if(f) f.focus();
@@ -3582,7 +3862,7 @@ function updateBulkPreview(){
   if(addLbl) addLbl.textContent = fresh.length
     ? (currentLang==='ar' ? 'إضافة ' + fresh.length + ' طالب' : 'Add ' + fresh.length + ' student' + (fresh.length>1?'s':''))
     : (currentLang==='ar' ? 'إضافة الطلاب' : 'Add students');
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 function confirmBulkAdd(){
   const parsed = getBulkParsed();
@@ -3594,12 +3874,12 @@ function confirmBulkAdd(){
     const key = (n.firstName + ' ' + (n.lastName||'')).toLowerCase().trim();
     if(existing.has(key)){ skipped++; return; }
     existing.add(key);
-    state.students.push({ id: uid(), classroomId: state.selectedClassroom, firstName: n.firstName, lastName: n.lastName || '', points: 0, photo: null, colorIndex: 0, monster: MONSTERS[Math.floor(Math.random()*MONSTERS.length)], monsterSeed: randomMonsterSeed() });
+    state.students.push({ id: uid(), classroomId: state.selectedClassroom, firstName: n.firstName, lastName: n.lastName || '', points: 0, photo: null, colorIndex: 0, monster: MONSTERS[Math.floor(Math.random()*MONSTERS.length)], monsterSeed: randomMonsterSeed(), absent: false });
     added++;
   });
   if(!added){ toast(currentLang==='ar' ? 'كل الأسماء موجودة مسبقًا — لا جديد.' : 'All those names are already in this class.', 'error'); SFX.error(); return; }
   saveState(); closeBulkAddModal(); renderAll();
-  if(window.confetti) confetti({ particleCount: 90, spread: 80, origin: { y: 0.6 } });
+  if(window.confetti) confetti({ particleCount: 45, spread: 80, origin: { y: 0.6 } });
   playClick();
   let msg = currentLang==='ar'
     ? 'تمت إضافة ' + added + ' طالب! 🎉'
@@ -3629,7 +3909,7 @@ function handleBulkPhotoSelect(ev){
   const sb = document.getElementById('bulkScanBtn');
   if(sb) sb.disabled = false;
   switchBulkTab('photo', true);
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
   runBulkOcr();
 }
 function downscaleForOcr(file, maxSide){
@@ -3716,7 +3996,7 @@ async function runBulkOcr(){
   }
   bulkOcrRunning = false;
   if(scanBtn) scanBtn.disabled = !bulkPhotoFile;
-  if(window.lucide) lucide.createIcons();
+  refreshIcons();
 }
 
 /* ---------- Boot ---------- */
