@@ -190,7 +190,7 @@ tailwind.config = {
 
   /* ---------- BRUTAL MINUS feedback (much more aggressive) ---------- */
   @keyframes shakeHard { 0%,100%{transform:translateX(0) rotate(0)} 15%{transform:translateX(-10px) rotate(-1.5deg)} 30%{transform:translateX(9px) rotate(1.2deg)} 45%{transform:translateX(-7px) rotate(-1deg)} 60%{transform:translateX(6px) rotate(1deg)} 75%{transform:translateX(-4px)} 90%{transform:translateX(3px)} }
-  @keyframes shakeBrutal { 0%,100%{transform:translate(0) rotate(0)} 8%{transform:translate(-16px,3px) rotate(-3deg)} 18%{transform:translate(14px,-3px) rotate(2.6deg)} 30%{transform:translate(-13px,2px) rotate(-2.4deg)} 42%{transform:translate(11px,-2px) rotate(2deg)} 54%{transform:translate(-9px,2px) rotate(-1.8deg)} 66%{transform:translate(7px,-1px) rotate(1.4deg)} 78%{transform:translate(-5px,1px) rotate(-1deg)} 90%{transform:translate(3px,0) rotate(.6deg)} }
+  @keyframes shakeBrutal { 0%,100%{transform:translate(0) rotate(0)} 25%{transform:translate(-8px,2px) rotate(-2deg)} 50%{transform:translate(8px,-2px) rotate(2deg)} 75%{transform:translate(-4px,1px) rotate(-1deg)} }
   @keyframes glowNegHard { 0%{ box-shadow:0 0 0 0 rgba(220,38,38,0);} 25%{ box-shadow:0 0 0 10px rgba(220,38,38,.55), 0 14px 34px rgba(220,38,38,.45);} 100%{ box-shadow:0 4px 14px rgba(2,132,199,.08);} }
   @keyframes glowNegBrutal { 0%{ box-shadow:0 0 0 0 rgba(220,38,38,0);} 20%{ box-shadow:0 0 0 18px rgba(220,38,38,.65), 0 0 44px rgba(220,38,38,.8), 0 18px 44px rgba(127,29,29,.6);} 45%{ box-shadow:0 0 0 10px rgba(220,38,38,.5), 0 0 30px rgba(220,38,38,.7);} 100%{ box-shadow:0 4px 14px rgba(2,132,199,.08);} }
   .dojo-tile.flash-neg { animation: shakeBrutal .6s ease, glowNegBrutal 1s ease; border-color:#B91C1C !important; border-width:3px !important; background:linear-gradient(180deg,#FEF2F2,#FEE2E2) !important; }
@@ -217,7 +217,7 @@ tailwind.config = {
   #minusVignette.on { animation: redPulse 1s ease forwards; }
   body.screen-shake { animation: screenQuake .55s ease; }
   @keyframes screenShake { 0%,100%{transform:translate(0)} 20%{transform:translate(-7px,2px)} 40%{transform:translate(6px,-2px)} 60%{transform:translate(-4px,1px)} 80%{transform:translate(3px,-1px)} }
-  @keyframes screenQuake { 0%,100%{transform:translate(0) rotate(0)} 12%{transform:translate(-12px,4px) rotate(-.5deg)} 26%{transform:translate(11px,-4px) rotate(.5deg)} 40%{transform:translate(-9px,3px) rotate(-.4deg)} 55%{transform:translate(8px,-2px) rotate(.35deg)} 70%{transform:translate(-5px,2px)} 85%{transform:translate(4px,-1px)} }
+  @keyframes screenQuake { 0%,100%{transform:translate(0) rotate(0)} 25%{transform:translate(-8px,3px) rotate(-.4deg)} 50%{transform:translate(8px,-3px) rotate(.4deg)} 75%{transform:translate(-4px,1px) rotate(-.2deg)} }
   @keyframes bannerShakeX { 0%,100%{transform:translateX(0)} 20%{transform:translateX(-7px)} 40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(3px)} }
   #successBannerInner.banner-neg { animation: bannerDrop 2.2s ease forwards, bannerShakeX .5s ease .15s 2; border-width:3px !important; border-color:#FCA5A5 !important; background:linear-gradient(135deg, rgba(255,255,255,.97), rgba(254,242,242,.96)) !important; box-shadow:0 10px 34px rgba(220,38,38,.4), 0 0 0 2px rgba(220,38,38,.35) !important; }
 
@@ -814,6 +814,11 @@ tailwind.config = {
     <!-- Data -->
     <div id="settingsPanelData" class="hidden p-5 space-y-3 overflow-y-auto">
       <div class="bg-sky-50 border border-sky-100 rounded-2xl p-3.5 text-[13px] font-bold text-sky-900" id="settingsStorageInfo">—</div>
+      <div class="flex gap-2">
+        <button onclick="exportStateFile()" class="flex-1 bg-indigo-50 border-2 border-indigo-200 hover:border-indigo-400 text-indigo-700 font-extrabold text-sm rounded-2xl py-3 flex items-center justify-center gap-2 transition-all active:scale-95"><i data-lucide="download" class="w-4 h-4"></i> <span data-i18n="export_data">Export Data</span></button>
+        <button onclick="document.getElementById('importFileInput').click()" class="flex-1 bg-amber-50 border-2 border-amber-200 hover:border-amber-400 text-amber-700 font-extrabold text-sm rounded-2xl py-3 flex items-center justify-center gap-2 transition-all active:scale-95"><i data-lucide="upload" class="w-4 h-4"></i> <span data-i18n="import_data">Import Data</span></button>
+        <input id="importFileInput" type="file" accept=".starclass,.json" class="hidden" onchange="importStateFile(this)" />
+      </div>
       <button onclick="confirmResetPoints()" class="w-full bg-white border-2 border-indigo-100 hover:border-indigo-300 text-indigo-700 font-extrabold text-sm rounded-2xl py-3 flex items-center justify-center gap-2 transition-all active:scale-95"><i data-lucide="rotate-ccw" class="w-4 h-4"></i> <span data-i18n="reset_points_class">Reset points (this class)</span></button>
       <div class="border-2 border-dashed border-rose-200 rounded-2xl p-4">
         <p class="font-extrabold text-[14px] text-rose-600 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> <span data-i18n="danger">Danger zone</span></p>
@@ -1414,6 +1419,7 @@ en: {
   students_unit:'students', pts_unit:'pts', total_pts:'total pts',
   no_class:'No Class', new_label:'+ New', new_class_label:'+ New class',
   bulk_add:'Bulk Add', bulk_photo:'Photo', bulk_paste_btn:'Paste list', bulk_photo_btn:'Photo list',
+  export_data:'Export Data', import_data:'Import Data',
   bulk_title:'Add many students', bulk_sub:'Paste a name list, or scan a photo of one — into',
   bulk_tab_paste:'Paste text', bulk_tab_photo:'Photo scan',
   bulk_paste_label:'One student per line (or comma-separated)', bulk_paste_ph:'Sophia Carter\nLiam\nOlivia Ahmed\n... one name per line works best',
@@ -1490,6 +1496,7 @@ ar: {
   no_class:'لا يوجد صف', new_label:'+ جديد', new_class_label:'+ فصل جديد',
   bulk_add:'إضافة جماعية', bulk_photo:'صورة',
   bulk_paste_btn:'لصق قائمة', bulk_photo_btn:'قائمة صورة',
+  export_data:'تصدير البيانات', import_data:'استيراد البيانات',
   bulk_title:'إضافة العديد من الطلاب', bulk_sub:'الصق قائمة أسماء، أو امسح صورة لها — إلى',
   bulk_tab_paste:'لصق نص', bulk_tab_photo:'مسح صورة',
   bulk_paste_label:'طالب واحد في كل سطر (أو مفصولة بفواصل)',
@@ -1631,6 +1638,48 @@ function saveStateSoon(){
   saveState();
   _saveT = setTimeout(function(){ _saveT = null; if(_savePending){ _savePending = false; try{ saveState(); }catch(e){} } }, 500);
 }
+/* ---------- Export / Import (portable JSON file) ---------- */
+function exportStateFile(){
+  try{
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'StarClass.starclass';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast('Data exported! 📦');
+  }catch(e){
+    toast('Export failed ❌','error');
+  }
+}
+function importStateFile(input){
+  const file = input.files && input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || !parsed.classrooms || !parsed.students){ throw new Error('Invalid'); }
+      state = parsed;
+      ensureMonsterSeeds();
+      saveState();
+      renderAll();
+      input.value = '';
+      toast('Data imported! ✅');
+    }catch(err){
+      toast('Invalid import file ❌','error');
+    }
+  };
+  reader.readAsText(file);
+}
+/* Auto-save when the page closes / refreshes (localStorage only — no download) */
+window.addEventListener('beforeunload', ()=>{
+  try{ saveState(); }catch(e){}
+});
 const _monsterCache = new Map();
 function cachedChubby(seed, extraCls){
   const key = (seed >>> 0) + '|' + (extraCls || '');
